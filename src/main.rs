@@ -1,5 +1,6 @@
 use crate::preprocessor::Preprocessor;
 
+mod convolution;
 mod preprocessor;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
