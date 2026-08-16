@@ -1,8 +1,30 @@
 use image::{ImageBuffer, ImageReader, Luma};
+use std::fs;
+
+const IMAGE_DIRECTORY: &str = "./src/images/";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let img = ImageReader::open("./src/images/raw_images/5/6.png")?.decode()?;
-    let mut processed_img = img.grayscale().adjust_contrast(90.0);
+    let _ = preprocess_images();
+
+    Ok(())
+}
+
+fn preprocess_images() -> Result<(), Box<dyn std::error::Error>> {
+    for n in 0..=9 {
+        let path = format!("{}/raw_images/{}", IMAGE_DIRECTORY, n);
+        let images = fs::read_dir(path).unwrap();
+
+        for image in images {
+            let _ = preprocess_image(&image.unwrap().path().display().to_string());
+        }
+    }
+
+    Ok(())
+}
+
+fn preprocess_image(path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let img = ImageReader::open(path)?.decode()?;
+    let mut processed_img = img.grayscale();
     let _ = processed_img.invert();
     processed_img = processed_img.brighten(20).adjust_contrast(40.0);
 
@@ -19,7 +41,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         y_offset as i64,
     );
 
-    final_canvas.save("./src/images/processed_images/5/6.png")?;
-
+    final_canvas.save(path.replace("raw_images", "processed_images"))?;
     Ok(())
 }
