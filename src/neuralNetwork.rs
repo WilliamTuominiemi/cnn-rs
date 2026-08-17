@@ -34,8 +34,6 @@ impl NeuralNetwork {
         let amount_of_pools = max_pooled_side_size * max_pooled_side_size;
         let mut max_pooled_bytes = vec![0; amount_of_pools];
 
-        println!("{}", amount_of_pools);
-
         for pool in 0..amount_of_pools {
             let index = pool * stride;
             let row = pool / amount_of_pools.isqrt();

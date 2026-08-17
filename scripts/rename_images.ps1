@@ -1,5 +1,5 @@
 $location = Get-Location
-$targetPath = Join-Path -Path $location -ChildPath "src\images\raw_images\"
+$targetPath = Join-Path -Path $location -ChildPath "\images\raw_images\"
 $folders = Get-ChildItem -Path $targetPath
 
 foreach ($folder in $folders)
