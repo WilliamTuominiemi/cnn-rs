@@ -1,10 +1,10 @@
 use image::DynamicImage;
 
-pub struct Convolution {}
+pub struct NeuralNetwork {}
 
-impl Convolution {
-    pub fn new() -> Convolution {
-        Convolution {}
+impl NeuralNetwork {
+    pub fn new() -> NeuralNetwork {
+        NeuralNetwork {}
     }
 
     pub fn apply_convolution(&self, image: DynamicImage, kernel: &[f32]) {
