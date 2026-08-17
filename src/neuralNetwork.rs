@@ -1,4 +1,4 @@
-use image::DynamicImage;
+use image::{DynamicImage, ImageBuffer, Luma};
 use std::cmp;
 
 pub struct NeuralNetwork {}
@@ -12,7 +12,19 @@ impl NeuralNetwork {
         image.filter3x3(kernel)
     }
 
-    pub fn apply_max_pool(&self, image: DynamicImage) {}
+    pub fn apply_max_pool(&self, image: DynamicImage) -> DynamicImage {
+        let bytes = image.as_bytes();
+        let pooled_bytes = self.max_pool(bytes);
+
+        let new_width = image.width() / 2;
+        let new_height = image.width() / 2;
+
+        let buffer =
+            ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(new_width, new_height, pooled_bytes)
+                .expect("pooled byte length doesn't match new_width * new_height");
+
+        DynamicImage::ImageLuma8(buffer)
+    }
 
     fn max_pool(&self, bytes: &[u8]) -> Vec<u8> {
         let stride = 2;

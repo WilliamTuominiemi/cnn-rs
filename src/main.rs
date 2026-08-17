@@ -17,6 +17,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let altered_image = nn.apply_convolution(image, &kernel);
     let _ = altered_image.save("kernel.png");
 
-    nn.apply_max_pool(altered_image);
+    let max_pooled_image = nn.apply_max_pool(altered_image);
+    let _ = max_pooled_image.save("pooled.png");
+
     Ok(())
 }
