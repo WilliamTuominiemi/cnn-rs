@@ -1,33 +1,14 @@
-use rand::rng;
-use rand_distr::{Distribution, StandardNormal};
+use image::DynamicImage;
 
-pub struct Convolution {
-    no_of_kernels: u32,
-    kernel_size: u32,
-    stride: u32,
-    bias: u32,
-    kernels: Vec<f32>,
-}
+pub struct Convolution {}
 
 impl Convolution {
-    pub fn new(no_of_kernels: u32, kernel_size: u32, stride: u32, bias: u32) -> Convolution {
-        let mut rng = rng();
-        let normal = StandardNormal;
-        let scale = (kernel_size * kernel_size) as f32;
+    pub fn new() -> Convolution {
+        Convolution {}
+    }
 
-        let kernels: Vec<f32> = (0..no_of_kernels * kernel_size * kernel_size)
-            .map(|_| {
-                let sample: f32 = normal.sample(&mut rng);
-                sample / scale
-            })
-            .collect();
-
-        Convolution {
-            no_of_kernels,
-            kernel_size,
-            stride,
-            bias,
-            kernels,
-        }
+    pub fn apply_convolution(&self, image: DynamicImage, kernel: &[f32]) {
+        let altered_image = image.filter3x3(kernel);
+        let _ = altered_image.save("kernel.png");
     }
 }
