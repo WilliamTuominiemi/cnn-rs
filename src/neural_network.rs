@@ -4,6 +4,8 @@ use rand::distr::weighted;
 use rand_distr::{Distribution, Normal};
 use std::cmp;
 
+const FLATTENED_IMAGE_SIZE: u32 = 64;
+
 pub struct NeuralNetwork {
     filters: Vec<[f32; 9]>,
     weights: [Vec<f32>; 10],
@@ -29,7 +31,8 @@ impl NeuralNetwork {
             biases: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         };
 
-        nn.initialize_kernels();
+        nn.initialize_filters();
+        nn.initialize_weights();
 
         nn
     }
@@ -42,7 +45,7 @@ impl NeuralNetwork {
         // }
     }
 
-    fn initialize_kernels(&mut self) {
+    fn initialize_filters(&mut self) {
         let mean = 0.0;
         let std_dev = 0.1;
         let normal = Normal::new(mean, std_dev).unwrap();
@@ -58,6 +61,20 @@ impl NeuralNetwork {
         }
 
         self.filters = kernels;
+    }
+
+    fn initialize_weights(&mut self) {
+        let mean = 0.0;
+        let std_dev = (2.0 / (FLATTENED_IMAGE_SIZE as f32 + 10.0)).sqrt();
+        let normal = Normal::new(mean, std_dev).unwrap();
+
+        for i in 0..10 {
+            let mut weights_for_digit = vec![];
+            for _ in 0..FLATTENED_IMAGE_SIZE {
+                weights_for_digit.push(normal.sample(&mut rand::rng()));
+            }
+            self.weights[i] = weights_for_digit;
+        }
     }
 
     fn forward_propagate(&self, image: DynamicImage) {
@@ -83,7 +100,7 @@ impl NeuralNetwork {
         &self,
         flat_image: ImageBuffer<Luma<u8>, Vec<u8>>,
         digit: usize,
-    ) -> DynamicImage {
+    ) -> ImageBuffer<Luma<u8>, Vec<u8>> {
         let image_bytes = flat_image.into_raw();
 
         let bias = self.biases[digit];
@@ -103,11 +120,14 @@ impl NeuralNetwork {
             "weighted image bytes length differs from original"
         );
 
-        let size = image_bytes.len().isqrt() as u32;
-        let buffer = ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(size, size, weighted_bytes)
-            .expect("weighted byte length doesn't match new_width * new_height");
+        let buffer = ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(
+            FLATTENED_IMAGE_SIZE,
+            FLATTENED_IMAGE_SIZE,
+            weighted_bytes,
+        )
+        .expect("weighted byte length doesn't match new_width * new_height");
 
-        DynamicImage::ImageLuma8(buffer)
+        buffer
     }
 
     fn apply_max_pool(&self, image: DynamicImage) -> DynamicImage {
