@@ -5,6 +5,5 @@ edition = "2024"
 
 [dependencies]
 image = "0.25.10"
-ndarray = "0.17.2"
 rand = "0.10.2"
 rand_distr = "0.6.0"

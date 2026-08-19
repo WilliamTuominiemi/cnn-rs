@@ -23,9 +23,9 @@ impl Preprocessor {
         let img = ImageReader::open(path)?.decode()?;
         let mut processed_img = img.grayscale();
         let _ = processed_img.invert();
-        processed_img = processed_img.brighten(20).adjust_contrast(40.0);
+        processed_img = processed_img.adjust_contrast(60.0).brighten(20);
 
-        let new_width = 32;
+        let new_width = 16;
         let new_height = new_width;
 
         let resized_img =

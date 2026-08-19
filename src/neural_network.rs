@@ -1,18 +1,57 @@
 use image::{DynamicImage, ImageBuffer, Luma};
+use rand_distr::{Distribution, Normal};
 use std::cmp;
 
-pub struct NeuralNetwork {}
+pub struct NeuralNetwork {
+    filters: Vec<[f32; 9]>,
+    weights: Vec<Vec<f32>>,
+    biases: Vec<Vec<f32>>,
+}
 
 impl NeuralNetwork {
     pub fn new() -> NeuralNetwork {
-        NeuralNetwork {}
+        let nn = NeuralNetwork {
+            filters: vec![],
+            weights: vec![],
+            biases: vec![],
+        };
+
+        nn.initialize_kernels();
+
+        nn
     }
 
-    pub fn apply_convolution(&self, image: DynamicImage, kernel: &[f32]) -> DynamicImage {
+    pub fn train(&self, num_epochs: u32) {
+        for epoch in 1..=num_epochs {
+            println!("Epoch {}/{}", epoch, num_epochs);
+        }
+    }
+
+    fn initialize_kernels(&self) -> Vec<[f32; 9]> {
+        let mean = 0.0;
+        let std_dev = 0.1;
+        let normal = Normal::new(mean, std_dev).unwrap();
+
+        let mut kernels: Vec<[f32; 9]> = vec![];
+
+        for _ in 0..8 {
+            let mut kernel = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+            for i in 0..9 {
+                kernel[i] = normal.sample(&mut rand::rng());
+            }
+            kernels.push(kernel);
+        }
+
+        kernels
+    }
+
+    fn forward_propagate(&self, image: DynamicImage) {}
+
+    fn apply_convolution(&self, image: DynamicImage, kernel: &[f32]) -> DynamicImage {
         image.filter3x3(kernel)
     }
 
-    pub fn apply_max_pool(&self, image: DynamicImage) -> DynamicImage {
+    fn apply_max_pool(&self, image: DynamicImage) -> DynamicImage {
         let bytes = image.as_bytes();
         let pooled_bytes = self.max_pool(bytes);
 
