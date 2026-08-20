@@ -81,33 +81,25 @@ impl NeuralNetwork {
         for kernel in self.filters.clone() {
             let filtered_image = image.filter3x3(&kernel);
             // Technically should have ReLU on the filtered image but I can't be arsed rn
-            let bytes: Vec<f32> = image
+            let bytes: Vec<f32> = filtered_image
                 .as_bytes()
                 .iter()
                 .map(|&byte| (byte as f32) / 255.0)
                 .collect();
             let max_pooled_bytes = self.max_pool(bytes);
-            let weighted_bytes = self.apply_weights(max_pooled_bytes, 0);
+            let weighted_bytes = self.apply_weights(&max_pooled_bytes, 0);
         }
     }
 
-    fn apply_weights(&self, image_bytes: Vec<f32>, digit: usize) -> Vec<f32> {
+    fn apply_weights(&self, image_bytes: &Vec<f32>, digit: usize) -> f32 {
         let bias = self.biases[digit];
+        let mut total = 0.0;
 
-        let mut weighted_bytes: Vec<f32> = vec![];
-
-        for (weight, byte) in self.weights[digit].clone().iter().zip(&image_bytes) {
-            let weighted_byte = byte * weight + bias;
-            weighted_bytes.push(weighted_byte);
+        for (weight, byte) in self.weights[digit].iter().zip(image_bytes) {
+            total += byte * weight;
         }
 
-        assert_eq!(
-            image_bytes.len(),
-            weighted_bytes.len(),
-            "weighted image bytes length differs from original"
-        );
-
-        weighted_bytes
+        total + bias
     }
 
     fn max_pool(&self, bytes: Vec<f32>) -> Vec<f32> {
