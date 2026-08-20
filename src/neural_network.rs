@@ -38,7 +38,7 @@ impl NeuralNetwork {
     }
 
     pub fn train(&self, num_epochs: u32, image: DynamicImage) {
-        println!("{:?}", self.weights);
+        // println!("{:?}", self.weights);
         self.forward_propagate(image);
         // for epoch in 1..=num_epochs {
         //     println!("Epoch {}/{}", epoch, num_epochs);
@@ -81,36 +81,23 @@ impl NeuralNetwork {
         for kernel in self.filters.clone() {
             let filtered_image = image.filter3x3(&kernel);
             // Technically should have ReLU on the filtered image but I can't be arsed rn
-            let max_pooled = self.apply_max_pool(filtered_image);
-
-            let flattened = max_pooled.into_luma8();
-
-            println!("{:?}", flattened.len());
-
-            // let flattened = match max_pooled.as_flat_samples_f32() {
-            //     Some(f) => f,
-            //     None => panic!("Couln't flatten pooled image"),
-            // };
-
-            // pri
+            let bytes: Vec<f32> = image
+                .as_bytes()
+                .iter()
+                .map(|&byte| (byte as f32) / 255.0)
+                .collect();
+            let max_pooled_bytes = self.max_pool(bytes);
+            let weighted_bytes = self.apply_weights(max_pooled_bytes, 0);
         }
     }
 
-    fn apply_weights(
-        &self,
-        flat_image: ImageBuffer<Luma<u8>, Vec<u8>>,
-        digit: usize,
-    ) -> ImageBuffer<Luma<u8>, Vec<u8>> {
-        let image_bytes = flat_image.into_raw();
-
+    fn apply_weights(&self, image_bytes: Vec<f32>, digit: usize) -> Vec<f32> {
         let bias = self.biases[digit];
 
-        let mut weighted_bytes: Vec<u8> = vec![];
+        let mut weighted_bytes: Vec<f32> = vec![];
 
         for (weight, byte) in self.weights[digit].clone().iter().zip(&image_bytes) {
-            let adjusted_weight = (weight * 255.0) as u8; // Don't ask
-            let adjusted_bias = (bias * 255.0) as u8; // don't tell
-            let weighted_byte = byte * adjusted_weight + adjusted_bias;
+            let weighted_byte = byte * weight + bias;
             weighted_bytes.push(weighted_byte);
         }
 
@@ -120,37 +107,16 @@ impl NeuralNetwork {
             "weighted image bytes length differs from original"
         );
 
-        let buffer = ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(
-            FLATTENED_IMAGE_SIZE,
-            FLATTENED_IMAGE_SIZE,
-            weighted_bytes,
-        )
-        .expect("weighted byte length doesn't match new_width * new_height");
-
-        buffer
+        weighted_bytes
     }
 
-    fn apply_max_pool(&self, image: DynamicImage) -> DynamicImage {
-        let bytes = image.as_bytes();
-        let pooled_bytes = self.max_pool(bytes);
-
-        let new_width = image.width() / 2;
-        let new_height = image.width() / 2;
-
-        let buffer =
-            ImageBuffer::<Luma<u8>, Vec<u8>>::from_raw(new_width, new_height, pooled_bytes)
-                .expect("pooled byte length doesn't match new_width * new_height");
-
-        DynamicImage::ImageLuma8(buffer)
-    }
-
-    fn max_pool(&self, bytes: &[u8]) -> Vec<u8> {
+    fn max_pool(&self, bytes: Vec<f32>) -> Vec<f32> {
         let stride = 2;
         let amount_of_pixels = bytes.len();
         let side_size = amount_of_pixels.isqrt();
         let max_pooled_side_size = side_size / stride;
         let amount_of_pools = max_pooled_side_size * max_pooled_side_size;
-        let mut max_pooled_bytes = vec![0; amount_of_pools];
+        let mut max_pooled_bytes = vec![0.0; amount_of_pools];
 
         for pool in 0..amount_of_pools {
             let index = pool * stride;
@@ -168,10 +134,11 @@ impl NeuralNetwork {
             //     pool, index, row, top_left, top_right, bottom_left, bottom_right
             // );
 
-            let pool_value = cmp::max(
-                cmp::max(top_left, top_right),
-                cmp::max(bottom_left, bottom_right),
-            );
+            let pool_value = top_left
+                .max(top_right)
+                .max(bottom_left)
+                .max(bottom_right)
+                .ceil();
 
             max_pooled_bytes[pool] = pool_value;
         }
@@ -187,16 +154,21 @@ mod tests {
     #[test]
     fn test_max_pool() {
         let nn = NeuralNetwork::new();
-        let bytes_2x2 = [29, 15, 28, 184, 0, 100, 70, 38, 12, 12, 7, 2, 12, 12, 45, 6];
-        let expected_bytes_2x2 = vec![100, 184, 12, 45];
-
-        assert_eq!(nn.max_pool(&bytes_2x2), expected_bytes_2x2);
-
-        let bytes_3x3 = [
-            19, 22, 20, 12, 17, 11, 16, 30, 1, 23, 7, 14, 14, 24, 7, 2, 1, 7, 15, 10, 1, 1, 15, 1,
-            13, 13, 11, 5, 13, 7, 18, 9, 18, 13, 3, 4,
+        let bytes_2x2: Vec<f32> = vec![
+            29.0, 15.0, 28.0, 184.0, 0.0, 100.0, 70.0, 38.0, 12.0, 12.0, 7.0, 2.0, 12.0, 12.0,
+            45.0, 6.0,
         ];
-        let expected_bytes_3x3 = vec![30, 23, 17, 24, 7, 15, 18, 18, 13];
-        assert_eq!(nn.max_pool(&bytes_3x3), expected_bytes_3x3);
+        let expected_bytes_2x2: Vec<f32> = vec![100.0, 184.0, 12.0, 45.0];
+
+        assert_eq!(nn.max_pool(bytes_2x2), expected_bytes_2x2);
+
+        let bytes_3x3 = vec![
+            19.0, 22.0, 20.0, 12.0, 17.0, 11.0, 16.0, 30.0, 1.0, 23.0, 7.0, 14.0, 14.0, 24.0, 7.0,
+            2.0, 1.0, 7.0, 15.0, 10.0, 1.0, 1.0, 15.0, 1.0, 13.0, 13.0, 11.0, 5.0, 13.0, 7.0, 18.0,
+            9.0, 18.0, 13.0, 3.0, 4.0,
+        ];
+        let expected_bytes_3x3: Vec<f32> =
+            vec![30.0, 23.0, 17.0, 24.0, 7.0, 15.0, 18.0, 18.0, 13.0];
+        assert_eq!(nn.max_pool(bytes_3x3), expected_bytes_3x3);
     }
 }
